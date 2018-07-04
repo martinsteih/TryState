@@ -78,7 +78,10 @@ struct homing : sc::simple_state<homing, operational> {
 };
 
 struct move_jog : sc::simple_state<move_jog, operational> {
-  move_jog() { cout << "move_jog::ctor " << "\n"; }
+  move_jog() {
+    cout << "move_jog::ctor "
+	 << "\n";
+  }
   ~move_jog() { cout << "move_jog::dtor\n"; }
 };
 
