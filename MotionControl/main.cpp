@@ -60,8 +60,9 @@ struct standstill : sc::simple_state<standstill, S120> {
 };
 
 struct operational : sc::state<operational, S120> {
-  operational(my_context context) : my_base(context){
-    if (auto triggering(dynamic_cast<const event_pos_abs*>(triggering_event()));
+  operational(my_context context) : my_base(context) {
+    if (auto triggering(
+	    dynamic_cast<const event_pos_abs *>(triggering_event()));
 	triggering) {
       cout << "operational::ctor\n";
       cout << "moving to pos " << triggering->get_position() << endl;
@@ -71,7 +72,9 @@ struct operational : sc::state<operational, S120> {
   typedef mpl::list<sc::custom_reaction<event_pos_abs>,
 		    sc::transition<event_jog_pos, standstill>>
       reactions;
-  sc::result react(const event_pos_abs &) { cout << "operational::react()\n"; }
+  sc::result react(const event_pos_abs &e) {
+    cout << "operational::react(" << e.get_position() << ")\n";
+  }
 };
 
 //*********************Event definitions*************************
