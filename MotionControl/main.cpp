@@ -34,21 +34,34 @@ struct event_pos_rel : sc::event<event_jog_neg> {};
 
 struct standstill;
 
-//*********************State Machine*************************
-class S120 : public sc::state_machine<S120, standstill> {
+class Drive {
  public:
-  S120() {}
+  virtual void homing() = 0;
+  virtual void reset_error() = 0;
+  virtual void move_jog_pos() = 0;
+  virtual void move_jog_neg() = 0;
+  virtual void move_velocity() = 0;
+  virtual void pos_relative() = 0;
+  virtual void pos_absolute(double) = 0;
+};
+
+//*********************State Machine*************************
+class S120 : public Drive, public sc::state_machine<S120, standstill> {
+ public:
+  S120() { this->initiate(); }
   ~S120() {}
 
-  auto homing() { this->process_event(event_homing()); }
-  auto reset_error() { return this->process_event(event_reset()); }
-  auto move_jog_pos() { return this->process_event(event_jog_pos()); }
-  auto move_jog_neg() { return this->process_event(event_jog_neg()); }
-  auto move_velocity() { return this->process_event(event_move_velocity()); }
-  auto pos_absolute(double position) {
+  void homing() override { this->process_event(event_homing()); }
+  void reset_error() override { return this->process_event(event_reset()); }
+  void move_jog_pos() override { return this->process_event(event_jog_pos()); }
+  void move_jog_neg() override { return this->process_event(event_jog_neg()); }
+  void move_velocity() override {
+    return this->process_event(event_move_velocity());
+  }
+  void pos_absolute(double position) override {
     return this->process_event(event_pos_abs(position));
   }
-  auto pos_relative() { return this->process_event(event_pos_rel()); }
+  void pos_relative() override { return this->process_event(event_pos_rel()); }
 };
 
 //*********************State definitions*************************
@@ -77,12 +90,31 @@ struct operational : sc::state<operational, S120> {
   }
 };
 
+class DriveFactory {
+ public:
+  virtual unique_ptr<Drive> getDrive() const = 0;
+};
+
+class S120Factory : public DriveFactory {
+ public:
+  unique_ptr<Drive> getDrive() const override { return make_unique<S120>(); }
+};
+
+class Straightening {
+ public:
+  Straightening(DriveFactory &&drive_factory)
+      : my_drive{drive_factory.getDrive()} {
+    my_drive->homing();
+    my_drive->pos_absolute(211.54);
+    my_drive->pos_absolute(-11.5);
+  }
+
+ private:
+  unique_ptr<Drive> my_drive;
+};
+
 //*********************Event definitions*************************
 int main(int argc, char *argv[]) {
-  S120 my_drive;
-  my_drive.initiate();
-  my_drive.move_jog_pos();
-  my_drive.pos_absolute(100.0);
-  my_drive.pos_absolute(150.5);
+  Straightening str(move(S120Factory()));
   return 0;
 }
